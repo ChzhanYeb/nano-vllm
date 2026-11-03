@@ -1,0 +1,63 @@
+=== WITHOUT TOOLS ===
+<|im_start|>system
+你是一个严谨的助手。需要时调用工具。<|im_end|>
+<|im_start|>user
+北京今天天气怎么样？<|im_end|>
+<|im_start|>assistant
+
+
+=== WITH TOOLS ===
+<|im_start|>system
+你是一个严谨的助手。需要时调用工具。
+
+# Tools
+
+You may call one or more functions to assist with the user query.
+
+You are provided with function signatures within <tools></tools> XML tags:
+<tools>
+{"type": "function", "function": {"name": "get_weather", "description": "查询指定城市天气", "parameters": {"type": "object", "properties": {"city": {"type": "string", "description": "城市名"}}, "required": ["city"]}}}
+</tools>
+
+For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+<tool_call>
+{"name": <function-name>, "arguments": <args-json-object>}
+</tool_call><|im_end|>
+<|im_start|>user
+北京今天天气怎么样？<|im_end|>
+<|im_start|>assistant
+
+
+=== PREFIX: system + tool schema ===
+<|im_start|>system
+你是一个严谨的助手。需要时调用工具。
+
+# Tools
+
+You may call one or more functions to assist with the user query.
+
+You are provided with function signatures within <tools></tools> XML tags:
+<tools>
+{"type": "function", "function": {"name": "get_weather", "description": "查询指定城市天气", "parameters": {"type": "object", "properties": {"city": {"type": "string", "description": "城市名"}}, "required": ["city"]}}}
+</tools>
+
+For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+<tool_call>
+{"name": <function-name>, "arguments": <args-json-object>}
+</tool_call><|im_end|>
+
+
+=== METRICS ===
+{
+  "model_id": "/home/chzhanyeb/huggingface/Qwen3-0.6B",
+  "transformers_version": "4.57.0",
+  "tokenizer_name_or_path": "/home/chzhanyeb/huggingface/Qwen3-0.6B",
+  "chat_template_sha256": "a55ee1b1660128b7098723e0abcd92caa0788061051c62d51cbe87d9cf1974d8",
+  "tokens_without_tools": 30,
+  "tokens_with_tools_full_prompt": 169,
+  "tokens_tools_delta": 139,
+  "tokens_prefix_system_plus_tools": 156,
+  "tokens_tools_json_alone": 63,
+  "prefix_ratio_vs_full_prompt": 0.9231,
+  "prefix_percent_vs_full_prompt": "92.31%"
+}
