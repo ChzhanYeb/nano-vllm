@@ -195,3 +195,8 @@ cython_debug/
 .cursorindexingignore.mindmaps/
 gateway/test_sdk.py
 test_sdk.py
+
+node_modules/
+.pnpm-store/
+dist/
+*.tgz
