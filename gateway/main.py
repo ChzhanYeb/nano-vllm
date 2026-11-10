@@ -92,6 +92,23 @@ async def chat_completions(request: ChatCompletionRequest):
                 "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]
             }
             yield f"data: {json.dumps(final_chunk, ensure_ascii=False)}\n\n"
+            
+            # === 新增：针对 stream_options={"include_usage": True} 的兼容 ===
+            usage_chunk = {
+                "id": response_id,
+                "object": "chat.completion.chunk",
+                "created": int(time.time()),
+                "model": request.model,
+                "choices": [], # 必须为空
+                "usage": {
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens,
+                    "total_tokens": prompt_tokens + completion_tokens
+                }
+            }
+            yield f"data: {json.dumps(usage_chunk, ensure_ascii=False)}\n\n"
+            # ==========================================================
+
             yield "data: [DONE]\n\n"
 
         return StreamingResponse(event_generator(), media_type="text/event-stream")
