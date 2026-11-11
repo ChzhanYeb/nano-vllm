@@ -21,5 +21,13 @@ class PromptBuilder:
         
         # 2. 编码为 Token IDs
         prompt_token_ids = self.tokenizer.encode(prompt_text)
+
+        if len(prompt_token_ids) < 256:
+            pad_len = 256 - len(prompt_token_ids)
+            # 用无害的 token 补齐（注意不要用特殊 token 如 eos）
+            pad_token_id = self.tokenizer.convert_tokens_to_ids("。")
+            prompt_token_ids.extend([pad_token_id] * pad_len)
+            # 同步更新文本用于调试
+            prompt_text += "。" * pad_len
         
         return prompt_text, prompt_token_ids
