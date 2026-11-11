@@ -12,9 +12,8 @@ N_RUNS = 5
 client = OpenAI(base_url=BASE_URL, api_key="dummy")
 console = Console()
 
-# 定义 156 tokens 的前缀（约 100 个汉字 + 50 个英文字符）
-# 你可以根据实际业务替换为你真实的 System Prompt
-PREFIX_156 = "你是nano-vllm测试助手。请严格遵循以下规则：1. 所有回答必须包含'测试'二字；2. 字数控制在50字以内；3. 不要输出任何Markdown格式；4. 保持语气客观中立。以下是工具列表：[tool1, tool2, tool3, tool4, tool5, tool6, tool7, tool8, tool9, tool10, tool11, tool12, tool13, tool14, tool15, tool16, tool17, tool18, tool19, tool20]。"
+# 定义超过 256 token 的长前缀（确保能切出至少 1 个完整的 block）
+PREFIX = "你是nano-vllm测试助手。请严格遵循以下规则：1. 所有回答必须包含'测试'二字；2. 字数控制在50字以内；3. 不要输出任何Markdown格式；4. 保持语气客观中立。以下是工具列表及详细说明：[tool_weather: 用于查询指定城市的实时天气情况，输入参数为城市名；tool_calendar: 用于读取用户的日历日程安排，输入参数为日期；tool_music: 用于在音乐软件中搜索并播放歌曲，输入参数为歌名或歌手；tool_news: 用于获取今日最新的科技新闻摘要；tool_translate: 用于将一段文本翻译成目标语言，输入参数为目标语言和文本内容；tool_search: 用于在互联网上搜索相关网页信息；tool_math: 用于计算复杂的数学表达式；tool_reminder: 用于设置系统闹钟或提醒；tool_email: 用于发送电子邮件；tool_doc: 用于读取本地文档内容。请始终使用最合适的工具来回答用户的问题。请务必保持回答的简洁性和准确性。如果有多个工具可以完成用户的需求，请选择最适合的一个。如果不需要使用工具，请直接回答。请严格遵守以上所有规则。]"
 LONG_TEXT_2048 = "请阅读以下长文并回答问题：" + "The quick brown fox jumps over the lazy dog. " * 300
 
 def measure_request(messages, workload_name):
@@ -80,12 +79,12 @@ def run_workloads():
         res = measure_request([{"role": "user", "content": "你好，请简单介绍一下你自己。"}], "cold")
         if res: results.append(res)
 
-    # 2. Warm (同 156 前缀连发 10 次)
+    # 2. Warm (同 300 前缀连发 10 次)
     console.print("[yellow]Testing Warm workload...[/yellow]")
     for _ in range(N_RUNS):
         for i in range(10):
             messages = [
-                {"role": "system", "content": PREFIX_156},
+                {"role": "system", "content": PREFIX},
                 {"role": "user", "content": "继续"}
             ]
             res = measure_request(messages, "warm")
@@ -104,7 +103,7 @@ def run_workloads():
     # 4. Multi (同前缀 4 轮对话)
     console.print("[yellow]Testing Multi workload...[/yellow]")
     for _ in range(N_RUNS):
-        history = [{"role": "system", "content": PREFIX_156}]
+        history = [{"role": "system", "content": PREFIX}]
         for turn in range(4):
             history.append({"role": "user", "content": f"第 {turn+1} 轮"})
             res = measure_request(history, "multi")
@@ -120,7 +119,7 @@ if __name__ == "__main__":
     df = run_workloads()
     
     # 落 CSV
-    df.to_csv("bench/out/baseline-w1.csv", index=False)
+    df.to_csv("bench/out/baseline-w2.csv", index=False)
     
     # 聚合取中位数与 P95
     summary = df.groupby("workload").agg(
@@ -146,7 +145,7 @@ if __name__ == "__main__":
     warm_ttft = summary[summary["workload"] == "warm"]["ttft_p50"].values[0]
     diff = warm_ttft - cold_ttft
     
-    with open("reports/baseline-w1.md", "w") as f:
+    with open("reports/baseline-w2.md", "w") as f:
         f.write("# W2-T1 Baseline Performance Report\n\n")
         f.write("## 关键结论\n")
         f.write(f"> **warm 与 cold 的 TTFT 差 = {diff:.2f} ms**（预期 ≈0，因为缓存未生效）\n\n")
@@ -154,4 +153,4 @@ if __name__ == "__main__":
         f.write(summary.to_markdown(index=False))
     
     console.print(f"[green]Done! Cold TTFT: {cold_ttft:.1f}ms, Warm TTFT: {warm_ttft:.1f}ms[/green]")
-    console.print(f"[green]Report saved to reports/baseline-w1.md[/green]")
+    console.print(f"[green]Report saved to reports/baseline-w2.md[/green]")

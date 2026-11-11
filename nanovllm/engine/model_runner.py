@@ -220,6 +220,9 @@ class ModelRunner:
         config.num_kvcache_blocks = int(total * config.gpu_memory_utilization - used - peak + current) // block_bytes
         # 至少要有 1 页，否则连一条最小请求都跑不了（通常是显存太小或利用率设太高）
         assert config.num_kvcache_blocks > 0
+
+        print(f"[显存探针] 当前 block_size={self.block_size}，可用 KV Cache 块数: {config.num_kvcache_blocks}")
+
         # 一次性开好整块显存：[K/V, 层, 页号, 页内 token, kv 头, 每头维度]
         self.kv_cache = torch.empty(2, hf_config.num_hidden_layers, config.num_kvcache_blocks, self.block_size, num_kv_heads, head_dim)
         # 按模型里模块的顺序，把第 layer_id 层对应的 K/V 视图注入到该层的 Attention 里。

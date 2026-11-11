@@ -52,6 +52,9 @@ class Scheduler:
           - is_prefill=True ：本轮做 prefill（可能包含多条序列、也可能是 chunked prefill 的一块）
           - is_prefill=False：本轮做 decode（每条序列 1 个 token）
         """
+        import time
+        t0 = time.perf_counter()
+
         scheduled_seqs = []
         num_batched_tokens = 0        # 本轮已累计的 token 数（预算 = max_num_batched_tokens）
 
@@ -91,6 +94,9 @@ class Scheduler:
             scheduled_seqs.append(seq)
 
         if scheduled_seqs:
+            cost = (time.perf_counter() - t0) * 1000
+            if cost > 0.1:  # 只打印超过 0.1ms 的，避免刷屏
+                print(f"[调度探针] 耗时 {cost:.3f} ms")
             return scheduled_seqs, True               # 有 prefill 可做，本轮就是 prefill
 
         # ================= 第二优先级：decode =================
@@ -117,6 +123,10 @@ class Scheduler:
         # 把本轮选中的序列放回运行队列的头部，并且保持相对顺序：
         # extendleft 是"逐个插到最左边"，效果上等于逆序，所以先用 reversed 还原
         self.running.extendleft(reversed(scheduled_seqs))
+
+        cost = (time.perf_counter() - t0) * 1000
+        if cost > 0.1:
+            print(f"[调度探针] 耗时 {cost:.3f} ms")
         return scheduled_seqs, False
 
     def preempt(self, seq: Sequence):

@@ -64,11 +64,15 @@ class Config:
         """
         # 1. 模型目录必须真实存在
         assert os.path.isdir(self.model)
+
         # 2. 页大小必须是 256 的整数倍：Attention 的 kernel 与显存对齐都依赖这个约定
-        assert self.kvcache_block_size % 256 == 0
+        assert self.max_num_batched_tokens % 256 == 0, "max_num_batched_tokens 必须能被块大小整除"
+
         # 3. 张量并行度限制在 1~8 张卡以内
         assert 1 <= self.tensor_parallel_size <= 8
+
         # 4. 读取模型自带的 config.json：建模型、算 KV Cache 显存都要用它
         self.hf_config = AutoConfig.from_pretrained(self.model)
+
         # 5. 用户给的 max_model_len 可能比模型位置编码上限还大，取更小的那个才安全
         self.max_model_len = min(self.max_model_len, self.hf_config.max_position_embeddings)
